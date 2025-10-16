@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Leo RC — Gear & Links</title>
+  <meta name="description" content="Links to gear, parts and resources from LeoRcCars videos (affiliate links). Updated automatically from my YouTube descriptions/comments." />
+  <!-- Tailwind Play CDN (fast, no build step) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* tiny tweaks for link cards */
+    .link-card { transition: transform .06s, box-shadow .06s; }
+    .link-card:hover { transform: translateY(-4px); box-shadow: 0 8px 20px rgba(12,12,12,0.08); }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <header class="bg-white/70 backdrop-blur sticky top-0 z-40 border-b">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div>
+        <a href="#" class="text-xl font-semibold">Leo RC — Gear Hub</a>
+        <div class="text-xs text-slate-500">Links and affiliate items mentioned in my YouTube videos</div>
+      </div>
+      <nav class="flex items-center gap-3 text-sm">
+        <a id="youtube-link" href="#" target="_blank" rel="noopener" class="px-3 py-1 rounded hover:bg-slate-100">YouTube</a>
+        <a id="tiktok-link" href="#" target="_blank" rel="noopener" class="px-3 py-1 rounded hover:bg-slate-100">TikTok</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-4 py-6">
+    <section class="mb-6">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 class="text-2xl font-bold">All gear & affiliate links</h1>
+          <p class="text-sm text-slate-600">Grouped by store — click an item to open the link. Each item shows the video where it was mentioned.</p>
+        </div>
+
+        <div class="flex gap-2 items-center">
+          <input id="search" type="search" placeholder="Search links, titles, categories..." class="px-3 py-2 border rounded w-64" />
+          <select id="categoryFilter" class="px-3 py-2 border rounded">
+            <option value="">All categories</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section id="content-area" aria-live="polite">
+      <!-- populated by JS -->
+      <div id="loading" class="text-slate-500">Loading links…</div>
+    </section>
+
+    <section class="mt-8 p-4 bg-white/60 border rounded">
+      <h2 class="font-semibold">Affiliate disclosure</h2>
+      <p class="text-sm text-slate-700 mt-1">
+        Some of the links on this page are affiliate links. If you buy something through them I may earn a small commission at no extra cost to you. Thanks — your support helps me make more RC videos!
+      </p>
+    </section>
+  </main>
+
+  <footer class="mt-10 py-6 border-t bg-white/70">
+    <div class="max-w-4xl mx-auto px-4 text-sm text-slate-600">
+      <div>© <span id="year"></span> LeoRcCars — Links hub</div>
+      <div class="mt-2">To report a broken link or suggest a category, contact me on my channel.</div>
+    </div>
+  </footer>
+
+<script>
+/*
+ Expected file: affiliate_links.json
+ Format:
+ {
+   "Amazon": [
+     {"url":"https://amzn.to/xyz","video_title":"Title","video_url":"https://youtube.com/watch?v=..."},
+     ...
+   ],
+   "AliExpress":[ ... ],
+   "Other":[ ... ]
+ }
+*/
+
+document.getElementById('year').textContent = new Date().getFullYear();
+
+// set the channel links (fill these in if you want)
+document.getElementById('youtube-link').href = "https://www.youtube.com/@LeoRcCars";
+document.getElementById('tiktok-link').href = "#"; // add your TikTok URL here
+
+const contentArea = document.getElementById('content-area');
+const searchInput = document.getElementById('search');
+const categoryFilter = document.getElementById('categoryFilter');
+
+let allData = {}; // entire JSON
+let flatList = []; // flattened items for search
+
+function safeText(t){ return (t||'').toString(); }
+
+function renderEmpty(){
+  contentArea.innerHTML = '<div class="text-slate-500">No links found.</div>';
+}
+
+function render() {
+  const q = (searchInput.value || '').toLowerCase().trim();
+  const cat = categoryFilter.value;
+
+  // filter by category then by query
+  const cats = Object.keys(allData).filter(c => !cat || c === cat);
+
+  if (cats.length===0) {
+    renderEmpty();
+    return;
+  }
+
+  let html = '';
+  cats.forEach(category => {
+    const items = allData[category].filter(item => {
+      if (q === '') return true;
+      const hay = (item.url + ' ' + item.video_title + ' ' + category).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+
+    if (items.length === 0) return;
+
+    html += `<div class="mb-6">
+      <h3 class="text-lg font-semibold mb-2">${category} <span class="text-slate-500 text-sm">(${items.length})</span></h3>
+      <div class="grid gap-3">`;
+
+    items.forEach(item => {
+      const domain = (new URL(item.url)).hostname.replace('www.','');
+      html += `<a class="block bg-white p-3 border rounded link-card" href="${item.url}" target="_blank" rel="noopener noreferrer">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="font-medium">${safeText(item.title || item.video_title)}</div>
+            <div class="text-xs text-slate-500 mt-1">${safeText(item.note || domain)}</div>
+            <div class="text-xs text-slate-600 mt-2">Mentioned in: <a class="text-indigo-600 underline" href="${item.video_url}" target="_blank" rel="noopener noreferrer">${safeText(item.video_title)}</a></div>
+          </div>
+          <div class="text-xs text-slate-500 text-right">
+            <div>${domain}</div>
+            <div class="mt-2"><span class="px-2 py-1 bg-slate-100 rounded text-slate-600">Open</span></div>
+          </div>
+        </div>
+      </a>`;
+    });
+
+    html += `</div></div>`;
+  });
+
+  contentArea.innerHTML = html || '<div class="text-slate-500">No links found.</div>';
+}
+
+// load JSON
+fetch('affiliate_links.json', {cache: "no-store"})
+  .then(r => {
+    if (!r.ok) throw new Error('affiliate_links.json not found (404). Put it in the repo root.');
+    return r.json();
+  })
+  .then(data => {
+    // normalize each item to include title & note
+    allData = {};
+    Object.keys(data).forEach(cat => {
+      allData[cat] = (data[cat] || []).map(it => {
+        // item shape: {url, video_title, video_url} - we'll add title field for display
+        return {
+          url: it.url,
+          video_title: it.video_title || '',
+          video_url: it.video_url || '',
+          title: it.name || it.video_title || it.url,
+          note: it.note || ''
+        };
+      });
+    });
+
+    // populate filter
+    const categories = Object.keys(allData);
+    categories.forEach(c => {
+      const opt = document.createElement('option'); opt.value = c; opt.textContent = c;
+      categoryFilter.appendChild(opt);
+    });
+
+    render();
+  })
+  .catch(err => {
+    contentArea.innerHTML = `<div class="text-red-600">Error loading links: ${String(err)}</div>`;
+    console.error(err);
+  });
+
+// events
+searchInput.addEventListener('input', () => render());
+categoryFilter.addEventListener('change', () => render());
+
+// quick keyboard focus
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && document.activeElement !== searchInput) {
+    e.preventDefault();
+    searchInput.focus();
+  }
+});
+</script>
+</body>
+</html>
